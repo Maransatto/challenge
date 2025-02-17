@@ -62,6 +62,33 @@ const fetchContacts = async (searchObject, domain, hubId) => {
   return searchResult;
 };
 
+const fetchCompanies = async (searchObject, domain, hubId) => {
+  let searchResult = {};
+
+  let tryCount = 0;
+  while (tryCount <= 4) {
+    try {
+      searchResult = await hubspotClient.crm.companies.searchApi.doSearch(
+        searchObject
+      );
+      break;
+    } catch (err) {
+      tryCount++;
+
+      if (new Date() > expirationDate) await refreshAccessToken(domain, hubId);
+
+      await new Promise((resolve, reject) =>
+        setTimeout(resolve, 5000 * Math.pow(2, tryCount))
+      );
+    }
+  }
+
+  if (!searchResult)
+    throw new Error("Failed to fetch companies for the 4th time. Aborting.");
+
+  return searchResult;
+};
+
 const fetchCompanyAssociations = async (contactsToAssociate, domain, hubId) => {
   let companyAssociationsResults = {};
   let tryCount = 0;
@@ -108,4 +135,5 @@ module.exports = {
   refreshAccessToken,
   fetchContacts,
   fetchCompanyAssociations,
+  fetchCompanies,
 };
